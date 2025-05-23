@@ -27,4 +27,3 @@ def log(filename=""):
         return inner
 
     return my_decorator
-

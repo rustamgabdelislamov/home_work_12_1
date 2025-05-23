@@ -1,22 +1,64 @@
 from unittest.mock import patch
 
-from src.external_api import convert_to_rub
+import pytest
 
-from src.utils import get_accepts_the_transaction
+from src.external_api import get_currency_usd_or_euro, convert_to_rub
 
-#
-# @patch("src.external_api.requests.request")
-# def test_convert_to_rub(mock_get):
-#         """
-#         Тестирует успешную конвертацию в рубли.
-#         """
-#         mock_get.status_code = 200
-#         mock_get.json.return_value = {"result": 100.0}
-#
-#         transactions_list = get_accepts_the_transaction('../../../h_12_1/data/operations.json')
-#
-#
-#
-#         assert convert_to_rub(transactions_list) ==
-#
 
+@patch('requests.request')
+def test_get_currency_usd_or_euro_usd_success(mock_request):
+    """Тест если есть сеть и валюта USD"""
+    mock_response = mock_request.return_value
+    mock_response.status_code = 200
+    mock_response.json.return_value = {'result': 100.0}
+
+    transaction = {
+        "operationAmount": {
+            "amount": "10",
+            "currency": {"code": "USD"}
+        }
+    }
+    result = get_currency_usd_or_euro(transaction)
+    assert result == 100.0
+
+
+@patch('requests.request')
+def test_get_currency_usd_or_euro_usd_error(mock_request):
+    """Тест если есть нет сети и валюта USD"""
+    mock_response = mock_request.return_value
+    mock_response.status_code = 500
+    mock_response.json.return_value = {}
+    transaction = {
+        "operationAmount": {
+            "amount": "10",
+            "currency": {"code": "USD"}
+        }
+    }
+    with pytest.raises(Exception):
+        get_currency_usd_or_euro(transaction)
+
+
+def test_convert_to_rub_rub():
+    """Тест если валюта RUB """
+    transaction = {
+        "operationAmount": {
+            "amount": 10,
+            "currency": {"code": "RUB"}
+        }
+    }
+    result = convert_to_rub(transaction)
+    assert result == 10
+
+
+def test_convert_to_rub_empty():
+    """Тест если пустой словарь """
+    transaction = {}
+    result = convert_to_rub(transaction)
+    assert result == "Словарь пуст."
+
+
+def test_convert_to_rub_not_dict():
+    """Тест если не словарь """
+    transaction = ''
+    result = convert_to_rub(transaction)
+    assert result == "Ошибка: transaction не является словарем."
